@@ -22,5 +22,6 @@
 !/outputs/iPhoneDesk/LICENSE
 !/outputs/iPhoneDesk/iphone-use-LICENSE.txt
 !/outputs/iPhoneDesk/下载接收器.ps1
+!/outputs/iPhoneDesk/下载安卓组件.ps1
 /outputs/iPhoneDesk/src/native/
 /outputs/iPhoneDesk/src/UsbMirror.cs

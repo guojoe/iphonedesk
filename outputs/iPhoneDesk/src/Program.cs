@@ -13,6 +13,23 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if(args.Contains("--android-self-test"))return AndroidProtocol.SelfTest();
+        if(args.Contains("--android") || args.Contains("--android-ui-smoke"))
+        {
+            var androidApp=new Application(); var android=new AndroidWindow(!args.Contains("--android-ui-smoke"));
+            if(args.Contains("--android-ui-smoke"))
+            {
+                android.Loaded+=(_,_)=>android.Dispatcher.BeginInvoke(()=>
+                {
+                    var visual=(FrameworkElement)android.Content;
+                    var bitmap=new System.Windows.Media.Imaging.RenderTargetBitmap((int)visual.ActualWidth,(int)visual.ActualHeight,96,96,PixelFormats.Pbgra32);
+                    bitmap.Render(visual);var encoder=new System.Windows.Media.Imaging.PngBitmapEncoder();encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+                    using(var file=File.Create(Path.Combine(AppContext.BaseDirectory,"android-ui-smoke.png")))encoder.Save(file);
+                    android.Close();
+                },System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            }
+            androidApp.Run(android); return 0;
+        }
         if(args.Contains("--diagnostic-self-test"))return DiagnosticSelfTest.Run();
         if(args.Contains("--self-test"))
         {
@@ -254,13 +271,13 @@ public sealed partial class Desk : Window
                     automatic=capture?.Automatic,windowState=WindowState.ToString()});}
             if(capture!=null)
             {
-                capture.ClientReady=hid.AbsoluteConnected;
-                if(videoHost.Video!=0 || DateTime.UtcNow-lastWindowScan>TimeSpan.FromSeconds(1))
+                if(applePageActive)capture.ClientReady=hid.AbsoluteConnected;else capture.ClientReady=false;
+                if(applePageActive && (videoHost.Video!=0 || DateTime.UtcNow-lastWindowScan>TimeSpan.FromSeconds(1)))
                 { try { videoHost.TryAttach(Path.Combine(AppContext.BaseDirectory,"receiver","uxplay-windows.exe")); capture.EmbeddedVideo=videoHost.Video; } catch(Exception ex) { SetStatus(ex.Message); } }
                 mirrorState.Text=MirrorConnected ? "● 屏幕镜像已连接" : "○ 等待 iPhone 屏幕镜像";
                 UpdateActionStates();
                 metrics.Text=$"定位 {hid.PositionCount} 次 · 按键 {hid.ButtonCount} 次 · 最近发送 {hid.LastNotifyMs:0.0} ms\n诊断日志 {diagnostics.Session[..8]} · 丢失 {diagnostics.Dropped} 条"+(diagnostics.WriteError==null?"":$" · 写入失败：{diagnostics.WriteError}");
-                if(DateTime.UtcNow-lastWindowScan>TimeSpan.FromSeconds(1))
+                if(applePageActive && DateTime.UtcNow-lastWindowScan>TimeSpan.FromSeconds(1))
                 {
                     lastWindowScan=DateTime.UtcNow;
                     capture.RefreshVideoWindows(Path.Combine(AppContext.BaseDirectory,"receiver","uxplay-windows.exe"));
@@ -280,10 +297,7 @@ public sealed partial class Desk : Window
         connectionTimer.Start();
         Loaded+=(_,_)=>{try{StartLocalControl();}catch(Exception ex){SetStatus("本机控制接口启动失败："+ex.Message);}};
         var launchArgs=Environment.GetCommandLineArgs();
-        if(launchArgs.Contains("--airplay") || !launchArgs.Skip(1).Any())
-            Loaded+=(_,_)=>OpenReceiver(this,new RoutedEventArgs());
-        if(Environment.GetCommandLineArgs().Contains("--resume-bluetooth"))
-            Loaded+=(_,_)=>StartHid(this,new RoutedEventArgs());
+        // Platform selection starts Apple services; Android selection never starts them.
         if(Environment.GetCommandLineArgs().Contains("--ui-smoke"))
         {
             var timer=new System.Windows.Threading.DispatcherTimer{Interval=TimeSpan.FromSeconds(2)};
@@ -418,6 +432,7 @@ public sealed partial class Desk : Window
     private void OpenFile(string file)=>Shell(Path.Combine(AppContext.BaseDirectory,file));
     private void EnableHover()
     {
+        if(!applePageActive)return;
         if(capture==null)return;
         try
         {

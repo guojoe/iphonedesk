@@ -3,9 +3,10 @@
 修订日期：2026-10-12（Asia/Shanghai）。适用项目根目录：`C:/guojoe/iphonedesk`。
 
 ## 当前有效范围（2026-10-12，优先于下方历史记录）
+当前新增安卓ADB/scrcpy支持及一级平台选择菜单（§34）、与iPhone一致的左菜单/右手机嵌入布局和iOS样式（§35）；启动先选苹果/安卓，再进入对应工作台。iPhone USB取消范围不包含本次明确授权的安卓ADB连接。
 当前版本包含独立重新连接按钮（§30）和图片显示修复（§31）：默认接收器720x1280@60竖屏，照片保持比例占满显示区宽度，上下比例黑边不自动裁图；分辨率菜单区分竖/横方向。当前源码、EXE、外部接收器参数配套冻结于§32新备份，§29上拖可用旧备份仍保留。
 当前运行使用16:32 bottom-anchor行为基线合入诊断日志版（§23），正式源码已撤销§17–19研究行为并与真实回滚DLL分流对照通过，源码与本次发布对应。配置按§26保持普通垂直拖动2，底部独立按钮1/anchorY=32482/32767；禁止全局回退垂直1。2026-10-12用户确认当前版本“向上拖动都可以了”，作为此设备当前实测成功基线（§29）；不外推多任务卡片或所有iPhone手势均稳定。§22/25–27失败记录是之前状态，不能覆盖本次用户确认。每次启动自动写logs/gesture-时间-session.jsonl，新日志已生产生效；§20–22关于“候选未上线/源码不同”的说法为当时状态，被§23取代。
-用户已取消USB功能：当前生产应用仅Wi-Fi AirPlay投屏和BLE鼠标。USB菜单、初始化、采集启动、截图及VideoHost分支均移除；UsbMirror.cs不参与编译。USB相关旧章节、索引和断言是历史研究记录，不得恢复为当前功能。用户还要求删除USB代码和驱动，但批量删除遭自动审批拒绝（blocked by policy，无进一步理由），目前源文件/包尚未物理删除；UsbDk和libusb0卸载结果仍待核验。保留Apple官方驱动及receiver，禁止扩大成删除所有USB设备驱动。鼠标服务复用修复保留，报告未订阅故障仍待验证。
+用户已取消iPhone USB功能：iPhone生产路径仅Wi-Fi AirPlay投屏和BLE鼠标；2026-10-12授权新增的安卓ADB USB/Wi-Fi模块见§34，不恢复旧iPhone USB驱动。USB菜单、初始化、采集启动、截图及VideoHost分支均移除；UsbMirror.cs不参与编译。USB相关旧章节、索引和断言是历史研究记录，不得恢复为当前功能。用户还要求删除USB代码和驱动，但批量删除遭自动审批拒绝（blocked by policy，无进一步理由），目前源文件/包尚未物理删除；UsbDk和libusb0卸载结果仍待核验。保留Apple官方驱动及receiver，禁止扩大成删除所有USB设备驱动。鼠标服务复用修复保留，报告未订阅故障仍待验证。
 ## 0. 权威与动手前检查
 
 本文件是本项目唯一有效的开发规范和知识库。与它冲突的旧代码、注释、旧文档和旧说法以本文件为准；“现状”记录不构成对旧实现的豁免。用户新指令优先，接受后立即更新本文件。AGENTS.md 仅作为入口，不增加任何独立规范。其他 Markdown 只作为用户操作说明或历史证据，不作为开发依据。
@@ -161,7 +162,7 @@ iphonedesk/
 
 正确做法：分别检查 mirrorConnected 与 mouseConnected，不用投屏状态放行输入。
 
-实测来源：`outputs/iPhoneDesk/src/Program.cs:260`（锚点 `mirrorState.Text=`）；`outputs/iPhoneDesk/src/Program.cs:164`（锚点 `inputState.Text=`）；`outputs/iPhoneDesk/运行日志.txt:107`（锚点 `2026-10-08T16:48:25`）。
+实测来源：`outputs/iPhoneDesk/src/Program.cs:277`（锚点 `mirrorState.Text=`）；`outputs/iPhoneDesk/src/Program.cs:181`（锚点 `inputState.Text=`）；`outputs/iPhoneDesk/运行日志.txt:107`（锚点 `2026-10-08T16:48:25`）。
 
 ### ⚠ F02 手机已配对却定位/按键均为0
 
@@ -173,7 +174,7 @@ iphonedesk/
 
 正确做法：不要恢复protocolConfirmed；按真实订阅状态判就绪；先查0计数路径再推断蓝牙慢。
 
-实测来源：`outputs/iPhoneDesk/src/Program.cs:257`（锚点 `capture.ClientReady=hid.AbsoluteConnected;`）；`outputs/iPhoneDesk/验证记录.md` v6；用户16:40截图定位0/按键0（历史截图文件见§5）。
+实测来源：`outputs/iPhoneDesk/src/Program.cs:274`（锚点 `capture.ClientReady=hid.AbsoluteConnected;`）；`outputs/iPhoneDesk/验证记录.md` v6；用户16:40截图定位0/按键0（历史截图文件见§5）。
 
 ### ⚠ F03 左右键整体互换后右键变成确认
 
@@ -185,7 +186,7 @@ iphonedesk/
 
 正确做法：保持物理左1/右2/中4，独立验证按下、点击、移动、释放及iOS按钮配置；2026-10-09用户已确认动作分流后的左键拖动成功，见F10。
 
-实测来源：`outputs/iPhoneDesk/src/HidMouse.cs:156`（锚点 `MapDesktopButtons(byte value)=>value`）；`outputs/iPhoneDesk/src/Program.cs:19`（锚点 `HidMouse.MapDesktopButtons(1)!=1`）；用户原话见§5 P02。
+实测来源：`outputs/iPhoneDesk/src/HidMouse.cs:156`（锚点 `MapDesktopButtons(byte value)=>value`）；`outputs/iPhoneDesk/src/Program.cs:36`（锚点 `HidMouse.MapDesktopButtons(1)!=1`）；用户原话见§5 P02。
 
 ### ⚠ F04 日志说报告连接不等于执行
 
@@ -209,7 +210,7 @@ iphonedesk/
 
 正确做法：只对必要按键边沿等待，移动合并但不删按钮转换；保留释放路径。
 
-实测来源：`outputs/iPhoneDesk/src/HidMouse.cs:166`（锚点 `held<80`）；`outputs/iPhoneDesk/src/HidMouse.cs:211`（锚点 `MapDesktopButtons(pressed.Value)!=buttons)`）；`outputs/iPhoneDesk/src/Program.cs:497`（锚点 `inputs.Last.Value=input.Absolute?input:`）。
+实测来源：`outputs/iPhoneDesk/src/HidMouse.cs:166`（锚点 `held<80`）；`outputs/iPhoneDesk/src/HidMouse.cs:211`（锚点 `MapDesktopButtons(pressed.Value)!=buttons)`）；`outputs/iPhoneDesk/src/Program.cs:512`（锚点 `inputs.Last.Value=input.Absolute?input:`）。
 
 ### ⚠ F06 WPF预览有手机但实时区变灰方块
 
@@ -221,7 +222,7 @@ iphonedesk/
 
 正确做法：原生宿主及renderer均设置区域，断开重置空区域，销毁时归还父窗口/style；实时截图用独立路径验证。
 
-实测来源：`outputs/iPhoneDesk/src/VideoHost.cs:22`（锚点 `CreateRoundRectRgn(0,0,0,0,0,0)`）；`outputs/iPhoneDesk/src/VideoHost.cs:80`（锚点 `SetWindowRgn(host,hostRegion,true)`）；`outputs/iPhoneDesk/src/Program.cs:299`（锚点 `RenderTargetBitmap`）。
+实测来源：`outputs/iPhoneDesk/src/VideoHost.cs:22`（锚点 `CreateRoundRectRgn(0,0,0,0,0,0)`）；`outputs/iPhoneDesk/src/VideoHost.cs:80`（锚点 `SetWindowRgn(host,hostRegion,true)`）；`outputs/iPhoneDesk/src/Program.cs:25`（锚点 `RenderTargetBitmap`）。
 
 ### ⚠ F07 接收器名称带空格不能按shell引号理解
 
@@ -233,7 +234,7 @@ iphonedesk/
 
 正确做法：以实际接收器解析规则为准；未支持原值只读回传；以后支持空格需扩展适配或接收器解析，不能猜引号就行。
 
-实测来源：`work/iphonedesk/mainwindow.cpp:99`（锚点 `return content.split`）；`outputs/iPhoneDesk/src/DeskLayout.cs:105`（锚点 `value.Any(char.IsWhiteSpace)`）。
+实测来源：`work/iphonedesk/mainwindow.cpp:99`（锚点 `return content.split`）；`outputs/iPhoneDesk/src/DeskLayout.cs:106`（锚点 `value.Any(char.IsWhiteSpace)`）。
 
 ### ⚠ F08 本机接口可读但截图没验证
 
@@ -994,12 +995,90 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
       "file": "outputs/iPhoneDesk/src/VideoHost.cs",
       "feature": "actual.Right==width && actual.Bottom==height && offsetX==0 && offsetY==0",
       "absent": false
+    },
+    {
+      "claim": "安卓只允许真实device状态启动",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "devices.SelectedItem is AndroidDevice { Ready: true }",
+      "absent": false
+    },
+    {
+      "claim": "安卓使用ArgumentList避免shell拼接",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "foreach (string arg in args) info.ArgumentList.Add(arg);",
+      "absent": false
+    },
+    {
+      "claim": "安卓配对码不进命令行和日志",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "new[] { \"pair\", address }, code, 60",
+      "absent": false
+    },
+    {
+      "claim": "安卓配对码及时清空",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "pairingCode.Clear();",
+      "absent": false
+    },
+    {
+      "claim": "平台选择先释放鼠标",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "await ReleaseCapture();",
+      "absent": false
+    },
+    {
+      "claim": "非苹果页禁止控制",
+      "file": "outputs/iPhoneDesk/src/Program.cs",
+      "feature": "if(applePageActive)capture.ClientReady=hid.AbsoluteConnected;else capture.ClientReady=false;",
+      "absent": false
+    },
+    {
+      "claim": "一级平台菜单入口",
+      "file": "outputs/iPhoneDesk/src/DeskLayout.cs",
+      "feature": "AddPlatformNavigation(page,body,nav);",
+      "absent": false
+    },
+    {
+      "claim": "安卓停止不杀全局adb服务",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "kill-server",
+      "absent": true
+    },
+    {
+      "claim": "安卓组件固定官方哈希校验",
+      "file": "outputs/iPhoneDesk/下载安卓组件.ps1",
+      "feature": "$taskDigest='b12a2c4ee8be317422451fc7dcf8ee20a71b5ea7ef9ad73ddd825a25316227a5'",
+      "absent": false
+    },
+    {
+      "claim": "安卓只嵌入自身进程",
+      "file": "outputs/iPhoneDesk/src/AndroidVideoHost.cs",
+      "feature": "var ids=new HashSet<uint>{(uint)processId};",
+      "absent": false
+    },
+    {
+      "claim": "安卓组件复用苹果卡片样式",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "var connection=Desk.Card(\"连接\");",
+      "absent": false
+    },
+    {
+      "claim": "安卓只依据视频元数据调整比例",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "videoHost.SetVideoSize(w,h);",
+      "absent": false
+    },
+    {
+      "claim": "安卓主操作复用iOS按钮",
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "feature": "Desk.IOSButton(title,async(_,_)=>await Execute(task),primary)",
+      "absent": false
     }
   ],
   "snapshots": [
     {
       "file": "outputs/iPhoneDesk/src/DeskLayout.cs",
-      "sha256": "56517E9F8B783BA4036889FB271180BEC638086D0F536203BE5D24CACF894C60"
+      "sha256": "4A2A14F071CC3E029476AC492E90FAD2E9E7C9C32EBB32645F5368D35B1B23A6"
     },
     {
       "file": "outputs/iPhoneDesk/src/HidMouse.cs",
@@ -1019,7 +1098,7 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
     },
     {
       "file": "outputs/iPhoneDesk/src/Program.cs",
-      "sha256": "822F9246008AF3351D6C457A1695C377571DF78102FF8065A2A32EC55782FD0F"
+      "sha256": "80EC0A299A4BE457D16B8AF1904D651811227C220DB792D7AD88C104AD38F4E9"
     },
     {
       "file": "outputs/iPhoneDesk/src/VideoHost.cs",
@@ -1075,11 +1154,11 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
     },
     {
       "file": "outputs/iPhoneDesk/iPhoneDesk.exe",
-      "sha256": "8E636E4D6274791BA7D5C97C5A2E460B289C28DBA62B7D2BB7167B6A5E21BDBC"
+      "sha256": "AA425BA4B493328F6945A55EA474A6FED6268E4531063D9BB65F566C807B5890"
     },
     {
       "file": "outputs/iPhoneDesk/iPhoneDesk.pdb",
-      "sha256": "BEAB21B6011AC7249C5DA91711FAF64B602AA79E11A3FC443404FFEA0E109D4A"
+      "sha256": "6689F506E8F0683644784A8DA19793A5C0D919DA5C7CF232B10903F65ED603AD"
     },
     {
       "file": "outputs/iPhoneDesk/mouse-actions.json",
@@ -1100,6 +1179,22 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
     {
       "file": "outputs/iPhoneDesk/tools/检查鼠标回调.py",
       "sha256": "2EDD82A485C0B413F718046F4E7E2BB1DE66CCD1ACB97396A1E23920B31D4D61"
+    },
+    {
+      "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
+      "sha256": "07862B169F793FC058A5CA513A48BEA8A0DAE638AA64246ED1B6C9EC42FA8BFD"
+    },
+    {
+      "file": "outputs/iPhoneDesk/下载安卓组件.ps1",
+      "sha256": "2A76B24524727C0338D73DF6BF73336C921A742AFAE73A620810C69D5E2349B5"
+    },
+    {
+      "file": "outputs/iPhoneDesk/src/IOSControls.cs",
+      "sha256": "3FC75693088055CF36320B308CF0382EB73F7F39CCDF22E8522C8FBE3A1BCACB"
+    },
+    {
+      "file": "outputs/iPhoneDesk/src/AndroidVideoHost.cs",
+      "sha256": "629C696E5075BCCBE21E0DA2E193EA263684C48B77D7D56641D749891A83516C"
     }
   ],
   "localOnlyFiles": [
@@ -1535,7 +1630,7 @@ reconnectRequested记录一次用户重试；卡片展示实际定位/点击客�
 
 ## 33. GitHub远程与推送规范（2026-10-12）
 用户明确授权推送到 **https://github.com/guojoe/iphonedesk**，并要求记录地址。Git remote：`origin https://github.com/guojoe/iphonedesk.git`；分支main。原远程只有README，基线提交686e7abe798fbe443366e3073830967bd747ce9f；本地接续它提交，不强推、不覆盖远程历史。仅设置本仓库提交署名guojoe与GitHub验证的noreply邮箱，不修改全局Git配置，不输出认证令牌。
-发布范围：正式C#/项目/manifest（排除已取消UsbMirror/native USB）、图标、mouse-actions配置、tools、接收器官方下载脚本、两份许可证、README/AGENTS/skills/.gitignore。接收器包通过固定来源+SHA256下载，不提交第三方二进制。忽略work/backups、bin/obj、所有exe/dll/pdb/zip、认证地址token、本地日志/手机图像/诊断报告/本机设置快照及USB旧组件。用户可用本地备份恢复运行包，Git为可构建源，不能把Git clone当作含已安装接收器。
+发布范围：正式C#/项目/manifest（排除已取消UsbMirror/native USB）、图标、mouse-actions配置、tools、接收器/安卓组件官方固定下载脚本、两份许可证、README/AGENTS/skills/.gitignore。接收器包通过固定来源+SHA256下载，不提交第三方二进制。忽略work/backups、bin/obj、所有exe/dll/pdb/zip、认证地址token、本地日志/手机图像/诊断报告/本机设置快照及USB旧组件。用户可用本地备份恢复运行包，Git为可构建源，不能把Git clone当作含已安装接收器。
 完整规范含历史本机证据。新增检查参数-RepositoryOnly，文档JSON的localOnlyFiles显式列出不提交的产物/历史文件；此模式只跳过名单项并打印跳过计数，其他缺文件仍报错；完整本机检查不跳过。新克隆应运行仓库模式、先构建再做两项EXE自检；运行EXE哈希/历史日志自检仍只能本机执行，不伪造提交。
 推送前检查git diff --cached/stat和敏感文件名单，源码复核不得包含真实token；只用git push origin main（不force）。推送后git ls-remote origin refs/heads/main与git rev-parse HEAD一致才称完成。PR不在此次任务范围。github CLI未安装，使用现有Git及已连接GitHub身份；不新增工具安装或要求用户重复审批。
 
@@ -1546,3 +1641,44 @@ reconnectRequested记录一次用户重试；卡片展示实际定位/点击客�
 §33格式检查踩坑：git diff --cached --check将原样保存的CRLF末尾CR报告trailing whitespace；根因为保留字节的-text属性，正确检查git -c core.whitespace=cr-at-eol diff --cached --check。该检查退出0，不改源码换行或全局设置。空输出经Set-Content管道没有生成文件，不能再Get-Content不存在的检查输出；直接以退出码验收。
 
 §33最新源码范围：按用户“保留最新的代码，之前的可以不要”，当前Git树仅保留维护版本，旧优化投屏.ps1移出跟踪并忽略；旧实验目录、构建和冻结备份不发布。历史实测/踩坑知识仍保留，旧脚本列入localOnlyFiles使新克隆检查可独立通过。本地冻结备份不改写，Git提交历史不强制重写。首批源码提交a29796e99d0001c1450d166c84bf8fb516b615af已正常推送并与远程SHA核对一致；本次范围清理不改运行行为、不重启程序。
+
+## 34. 安卓投屏与控制（2026-10-12）
+任务：用户要求提供安卓支持。动手前读取§0–5/§7–8/§29–33，80断言/26指纹/24证据行号基线通过。正式新增src/AndroidSupport.cs，AndroidProtocol.ParseDevices/Endpoint/SelfTest与AndroidWindow；DeskLayout.BuildLayout在左侧增加安卓工作台入口，Program --android可直接运行独立安卓面板，不创建iPhone GATT/热键/本机API。主程序打开入口复用一个安卓面板，关闭主窗口会关闭面板；不替换已验证iPhone手势或渲染路径。
+安卓以官方scrcpy独立窗口显示/处理输入，不嵌入VideoHost，不使用iPhone MouseCapture钩子。USB调试或Android11+无线调试，由手机用户授权；设备列表完整保留ADB serial/state/model元数据，只有state=device放行，unauthorized/offline/未知状态只读展示。多设备由用户选择，唯一设备可自动选择；不写死设备序列号。当前投屏进程存活时禁用重复启动和切换设备；进程退出解除禁用并显示真实退出码。进程启动仅报告已启动，不冒充首帧/手势实机成功。
+目录与索引：src/AndroidSupport.cs为维护源；outputs/iPhoneDesk/下载安卓组件.ps1为固定下载/校验入口；outputs/iPhoneDesk/android/scrcpy-win64-v5.0.1为本机官方完整包（含ADB/server/许可证），download-随机目录为校验来源ZIP，不进入Git。官方https://github.com/Genymobile/scrcpy/releases/download/v5.0.1/scrcpy-win64-v5.0.1.zip，SHA256 b12a2c4ee8be317422451fc7dcf8ee20a71b5ea7ef9ad73ddd825a25316227a5（来源官方doc/windows.md）。不下载任意站点/不改系统驱动/不静默升级；已存在组件必须逐文件匹配已校验官方包，否则保留原文件并报错。版本与完整目录名/哈希在代码和脚本同步。
+无线入口：配对地址+PasswordBox六位码 → adb pair地址，码走stdin且输出屏蔽，立即清空、不持久化；随后填写无线调试首页的连接地址 → adb connect → 刷新；配对端口和连接端口可能不同。Endpoint要求显式端口，支持IPv4/DNS/括号IPv6，拒绝空白、用户信息、路径、越界端口。ProcessStartInfo.ArgumentList传参，不拼shell。ADB一次操作有超时/关闭取消，超时仅停止该次命令；不执行kill-server、不撤销其他配对、不批量杀进程。断开只对所选Wi-Fi地址；停止/关闭仅终止持有的scrcpy进程，最多1秒优雅退出，保留全局ADB会话。首次ADB调用会按上游行为启动本机ADB服务，这是安卓调试组件，不冒充无后台进程。
+输入说明：独立窗口左键点击/拖动、滚轮、键盘；右键返回、中键主页、Alt+S多任务、F11全屏、Ctrl+左键双指缩放/旋转（来源官方v5.0.1/doc/shortcuts.md）。默认禁用音频与自动剪贴板同步，不读取用户照片到项目；只展示本地最近30条状态/错误（有界诊断内存），不把此上限作为功能展示阈值。部分品牌还需USB调试安全设置，受保护内容可能黑屏；无真实安卓设备时不能宣称输入/画面实测通过。
+调试与收尾：在构建目录运行iPhoneDesk.exe --android只开安卓面板；--android-self-test不创建UI/GATT/ADB/手机输入，验证真实格式样本的状态解析及地址合法性。构建后执行--self-test、--diagnostic-self-test、--android-self-test与python outputs/iPhoneDesk/tools/检查鼠标回调.py，最后运行检查规范.ps1及-RepositoryOnly。实机验收需用户提供已授权安卓：刷新→选device→启动→确认画面/左拖/滚轮/键盘/返回/多任务/断线/重启；无线配对和连接分别验。禁区：旧iPhone USB研究/过滤驱动不恢复、不改iPhone BLE报告/已确认动作配置；未授权状态不发送操作，不记录配对码，不伪造全手势支持。当前待编译、官方组件校验和离线测试，实机尚未验收。
+
+§34即时回写：初次Release构建无警告、三项自检均退出0、钩子COM边界检查通过；官方下载ZIP哈希通过并本地安装完整组件。scrcpy --version真实5.0.1，adb version真实1.0.41/37.0.1-15733141，scrcpy --help确认--no-audio/--no-clipboard-autosync/--serial/--window-title可用（本机命令来源）。新增--android-ui-smoke仅构造安卓面板并保存WPF图到产物目录，refreshOnLoad=false不调用ADB/手机；可与现有iPhone实例并行验UI，不抢热键/GATT。下载脚本保存UTF8 BOM适配内置WindowsPowerShell5.1中文，程序安装按钮仅该子进程ExecutionPolicy Bypass，不修改用户/系统执行策略。此不是实机图像或手势验收。
+
+§34用户追加菜单分级：启动先显示平台选择页，顶部一级菜单“苹果手机 / 安卓手机”，选择后才显示对应工作台。AddPlatformNavigation隐藏另一平台菜单；安卓AndroidPanel为主窗口内的UserControl，原AndroidWindow仅--android独立入口包装。选择苹果才按原启动参数开AirPlay/BLE并启用Hover；安卓不自动启动苹果服务，capture.ClientReady在非苹果页固定false；切换先await ReleaseCapture释放按键，安卓面板Dispose停止自有投屏/命令并从page移除，关闭主程序同样Dispose。iPhone后台服务在切换后保留但不接管鼠标，不自动撤销配对。此前“左侧新增安卓卡片/独立工作台面板”是本轮中间状态，被此分级菜单取代；scrcpy画面仍为独立窗口以使用原生输入。平台菜单和安卓字段操作期间禁用，避免并发切换/覆盖地址。
+
+§34字段/按钮核对：组件不存在时刷新/配对/连接禁用；未授权、无设备或已有投屏时启动禁用；无投屏时停止禁用。Wi-Fi断开支持IP:port与ADB mDNS的._adb-tls-connect._tcp服务序列（协议标识，非业务白名单），USB/未识别序列不允许断开并保留原值。设备刷新保留未知状态/型号缺省不推断授权。非苹果页定时器不查找/嵌入AirPlay窗口，避免安卓页重新抢苹果渲染器；原iPhone字段/钩子/动作配置保持。新增--platform-ui-smoke验证选择页→安卓→苹果→选择页可见性和销毁；单独测试不传--airplay/--resume，不能与正式主实例抢热键，同时必须按发布流程先退出正式主实例。安卓UI黑底截图发现是透明Content截图漏了Window背景，不是实机渲染失败，已将ScrollViewer.Background显式绑定面板背景，第二次查看图正确；此仅静态WPF界面证据。
+
+§34只读环境检查：adb devices -l仅输出List of devices attached、无设备行，当前无可验收安卓。组件已下载但手机授权/厂商控制/无线实际连接仍待设备，不据组件version称实机可用。首份Android UI smoke图已查看；背景修正后正常显示标题/状态/安卓菜单/无线输入。透明截图踩坑：【报错原文】无异常，截图黑底且黑标题看不见；【最小复现】RenderTargetBitmap仅渲染透明ScrollViewer.Content；【根因】Window.Background不属于被渲染Content；【正确写法】显式设置ScrollViewer.Background，重新渲染并视觉核对。不改变VideoHost/GPU渲染。
+
+§34发布验收：Release构建无警告；--self-test/--diagnostic-self-test/--android-self-test退出0，检查鼠标回调.py通过。已优雅关闭正式旧实例6960（核对绝对路径），旧EXE/PDB备份work/iphonedesk/android-support/rollback-20261012-114923，旧Git HEAD源码归档before-android-source.zip；两个已冻结用户备份保持原样。候选--platform-ui-smoke实际完成选择页→安卓→苹果→选择页，报告PASS，未启GATT或发送手机输入；--render-ui及--android-ui-smoke均退出0，两张WPF界面图已视觉核对。正式EXE/PDB与候选逐项SHA256匹配部署；未改mouse-actions.json、HidMouse/MouseCapture/LeftGesture/VideoHost或receiver配置/二进制。新版默认先选平台，这是用户追加要求，不能再期待刚启动就自动进入iPhone页。选择苹果后才根据--airplay/--resume-bluetooth启动原服务。
+新接手者只读本节可独立准备安卓组件、识别授权状态、用分别的无线端口配对/连接、启动/停止投屏、定位模块和执行三项离线测试；真实安卓手势和图像仍未验收（ADB当前无设备）。不把UI切换测试包装成安卓投屏实机测试。
+§34正式EXE SHA256：00C4C4BB647DB3C54D19DE960F82814B4A8D1E730E08887FB1D21F65BE7DA1FC。
+§34启动只读核验：正式路径新版27152响应正常，认证GET /status可达；平台选择页mirror=false/mouse=false为未选择平台的真实状态，不冒充连接。git diff确认HidMouse.cs/MouseCapture.cs/LeftGesture.cs/VideoHost.cs/mouse-actions.json与已确认Git基线无差异。现有本机API仍描述iPhone路径，安卓通过自己的工作台状态和scrcpy窗口控制，不把该API当作安卓连接验收。
+
+§34返回平台选择（用户追加）：改前读§0–3/§7–8/§34。顶部新增“← 返回选择”，苹果/安卓页显示，选择页隐藏；点击走同一个selection.SelectedIndex=0安全切换路径，保留释放输入、安卓Dispose、配对保留。切换处理中同步禁用下拉和返回按钮；WindowChrome.SetIsHitTestVisibleInChrome使标题栏内两个控件可直接点击，避免被当成拖动窗口。扩展原平台smoke以RaiseEvent触发实际返回按钮，并验证回到选择页且按钮隐藏；不改任何手机手势或驱动。只读adb曾识别小米13授权state=device，仅是连接检查，不是投屏操作验收；不在文档写设备序列号。
+
+§34返回按钮编译踩坑：【报错原文】CS0119: “Desk.Button(string, RoutedEventHandler)”是一个方法，这在给定的上下文中无效；【最小复现】Desk partial中Button.ClickEvent；【根因】既有Button方法遮蔽WPF类型名；【正确写法】System.Windows.Controls.Button.ClickEvent全限定引用。首次构建失败时未关闭或替换原程序。
+§34返回按钮验收：Release构建通过，平台smoke实际触发返回按钮回到选择页PASS。旧EXE/PDB备份work/iphonedesk/platform-back/rollback，新版配套部署；手机手势/鼠标配置未改。
+
+## 35. 安卓布局与iOS样式统一（2026-10-12）
+用户要求统一iOS样式，并明确参照iPhone左菜单/右手机。改前读§0–5/§7–8/§31/§34；只调整安卓布局、原生scrcpy宿主与样式工厂，不修改iPhone HID/手势/配置/VideoHost。AndroidPanel改280逻辑像素左侧滚动菜单（连接、组件、无线、手势、详情）、右侧手机画面；复用Desk.Card/IOSButton/Label/ThinScrollStyle，公开为internal static供同程序集调用，统一13/12px字体、14px卡片圆角、9px按钮、蓝主按钮/浅灰次按钮。新增IOSControls.Input圆角输入模板及ComboStyle，下拉仍由ComboBox/Popup/ItemsPresenter处理，PasswordBox保持遮掩，原文本/选择值不更改。
+新增src/AndroidVideoHost.cs：只枚举当前AndroidPanel持有scrcpy PID及固定window-title，不按进程名抢别的软件；SetParent/窗口样式去标题边框/按真实宿主尺寸MoveWindow，保持原GPU和SDL输入，不截图重编码、不走iPhone钩子。解绑恢复原父窗口/样式/位置；停止前先解绑，嵌入失败保留独立窗口并提示，左侧“切换独立窗口/嵌入右侧手机画面”可切换。纵横比例初值来自真实原生clientrect，后续scrcpy日志Texture元数据更新比例；无帧不得把PID存活写成手机操作已成功。原生日志元数据缺失保留已有比例，不硬写小米机型尺寸。
+本节取代§34默认独立窗口的中间方案；菜单/启动禁用/配对处理仍按§34。正式维护文件索引：AndroidSupport.cs AndroidPanel/FitPhone/Output/Update；AndroidVideoHost.cs TryAttach/SetVideoSize/Detach；IOSControls.cs Input/ComboStyle；DeskLayout.cs共享样式工厂。调试--android-ui-smoke仅WPF待机布局、不调用ADB；真实GPU画面不能用WPF黑图判断，需实际桌面视觉验证。当前待编译和实机嵌入核对。
+
+§35即时回写：首轮Release无警告，--android-ui-smoke退出0，已查看左卡片/右手机待机布局，输入框与下拉均为圆角。AndroidVideoHost独立维护，不改原VideoHost；只有持有PID+准确窗口标题匹配才嵌入。输入由SDL原生子窗口接收，是否可靠仍须实际嵌入后测试；独立窗口回退保留。AndroidPanel.Update启动/停止/已授权限制沿用；用户截图已经出现真实独立安卓画面，只证明此前投屏成功，不证明此次嵌入成功。computer-use技能用于实际界面检查，不操作手机安全设置/授权对话框。
+§35构建与菜单测试：三项离线自检及平台切换smoke通过，已备份旧配套EXE/PDB到work/iphonedesk/android-ios-layout/rollback并优雅退出旧实例，新产物配套部署启动。等待真实嵌入窗口验收。
+
+§35真实界面验收：computer-use在正式新版选择安卓→启动投屏，实际右侧出现小米13设置画面，主窗口原生子窗可访问树包含iPhoneDesk·Android，不再是独立浮动窗口。鼠标滚轮在手机区域向上滚动后设置列表由桌面/显示等位置滚动到系统个性化/锁屏/通知等位置，证明本轮嵌入输入有效；不改变任何手机设置。顶部平台下拉真实点击能展开三项；复验已发现下拉项仍使用系统蓝框，已补ComboBoxItem圆角/浅蓝选中样式统一。左侧启动文案在宿主接入后一次更新为投屏已连接，避免一直显示正在启动；报告仅窗口连接，无执行验证字段。未验证所有键盘/多点/旋转/无线功能，不扩大证据范围。
+
+§35推送前收尾（用户明确要求更新规范并推送）：正式源码/EXE指纹已同步，保留§34/35阶段记录并以末尾验收取代“待编译”初始状态。最新小米13实际画面和滚轮验证通过，未验证的旋转/无线/全部键盘仍保留限制。AndroidVideoHost/IOSControls/AndroidSupport及下载脚本进入Git；android官方二进制包、设备日志、WPF/手机截图、配对码、令牌与work/backups不提交。
+Computer-use调试踩坑：【报错原文】coordinate input geometry is unavailable；随后新用户消息后call get_window_state before using this window。【最小复现】仅include_screenshot=false取得树后对需要坐标的索引点击，或跨消息复用旧观察。【根因】输入几何/观察缓存未就绪或失效。【正确写法】每次动作前新观察含截图，核对截图实际目标，失败先重新观察，不盲重试。后续观察返回树为iPhoneDesk但图为前台其他应用，停止UI动作，未点击该应用；不把混合观察作为新版视觉证据。上述不涉及源码运行异常，不改变手机或系统设置。
+发布/复验：复制最新EXE/PDB须同一build并比对SHA256；Git发布仅源，第三方包用下载脚本固定校验。复验--self-test/--diagnostic-self-test/--android-self-test及--android-ui-smoke不发送手机输入；平台smoke须独立主实例。最新发布检查通过后正常快进推送origin main，使用git ls-remote与HEAD核对，不强推、不提交旧实验/运行文件。
+§35 Git源验收：32个暂存文件范围/令牌审查通过，index导出android-review通过RepositoryOnly；从该独立导出目录Release构建成功，--self-test/--diagnostic-self-test/--android-self-test/--android-ui-smoke均退出0。本轮发布含安卓支持、分级平台及返回按钮、统一iOS样式和安卓原生嵌入；正式手机内容/日志/序列号未作为文件提交。

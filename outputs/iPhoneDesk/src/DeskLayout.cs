@@ -90,6 +90,7 @@ public sealed partial class Desk
         var diag=Card("连接详情");cards.Children.Add(diag.Border);metrics.TextWrapping=TextWrapping.Wrap;diag.Body.Children.Add(metrics);
         status.FontSize=11;status.Foreground=ColorBrush("#636366");status.Margin=new Thickness(0,8,0,8);diag.Body.Children.Add(status);
         var details=new Expander{Header="查看连接日志",Margin=new Thickness(0,8,0,0)};log.Height=160;log.FontSize=11;details.Content=log;diag.Body.Children.Add(details);
+        AddPlatformNavigation(page,body,nav);
     }
     private static string ReceiverConfig=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"leapbtw","uxplay-windows","arguments.txt");
     private static string ReadMirrorName()
@@ -134,7 +135,7 @@ public sealed partial class Desk
         var hover=new Trigger{Property=IsMouseOverProperty,Value=true};hover.Setters.Add(new Setter(Control.BackgroundProperty,kind==2?ColorBrush("#FF453A"):ColorBrush("#EEF0F4")));if(kind==2)hover.Setters.Add(new Setter(Control.ForegroundProperty,Brushes.White));template.Triggers.Add(hover);button.Template=template;
         button.Click+=(_,_)=>{if(kind==0)SystemCommands.MinimizeWindow(this);else if(kind==1)WindowState=WindowState==WindowState.Maximized?WindowState.Normal:WindowState.Maximized;else Close();};return button;
     }
-    private static Style ThinScrollStyle()=>(Style)System.Windows.Markup.XamlReader.Parse("""
+    internal static Style ThinScrollStyle()=>(Style)System.Windows.Markup.XamlReader.Parse("""
         <Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" TargetType="ScrollBar">
           <Setter Property="Width" Value="8"/><Setter Property="Background" Value="Transparent"/>
           <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar">
@@ -146,13 +147,13 @@ public sealed partial class Desk
           </ControlTemplate></Setter.Value></Setter>
         </Style>
         """);
-    private TextBlock Label(string value,int size,string color,bool bold=false)=>new(){Text=value,FontSize=size,Foreground=ColorBrush(color),FontWeight=bold?FontWeights.SemiBold:FontWeights.Normal,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,5,0,5)};
-    private (Border Border,StackPanel Body) Card(string title)
+    internal static TextBlock Label(string value,int size,string color,bool bold=false)=>new(){Text=value,FontSize=size,Foreground=ColorBrush(color),FontWeight=bold?FontWeights.SemiBold:FontWeights.Normal,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,5,0,5)};
+    internal static (Border Border,StackPanel Body) Card(string title)
     {
         var content=new StackPanel();content.Children.Add(Label(title,13,"#1C1C1E",true));
         var border=new Border{Background=Brushes.White,CornerRadius=new CornerRadius(14),BorderBrush=ColorBrush("#E9ECF2"),BorderThickness=new Thickness(1),Padding=new Thickness(15),Margin=new Thickness(0,0,0,14),Child=content};return (border,content);
     }
-    private Button IOSButton(string title,RoutedEventHandler handler,bool primary)
+    internal static Button IOSButton(string title,RoutedEventHandler handler,bool primary)
     {
         var b=new Button{Content=title,Margin=new Thickness(0,8,0,0),FontSize=12,FocusVisualStyle=null,Padding=new Thickness(12,10,12,10),Background=primary?ColorBrush("#007AFF"):ColorBrush("#F4F6FA"),Foreground=primary?Brushes.White:ColorBrush("#007AFF"),BorderThickness=new Thickness(0),Cursor=System.Windows.Input.Cursors.Hand};
         var border=new FrameworkElementFactory(typeof(Border));border.SetValue(Border.CornerRadiusProperty,new CornerRadius(9));border.SetValue(Border.BackgroundProperty,new TemplateBindingExtension(Control.BackgroundProperty));border.SetValue(Border.PaddingProperty,new TemplateBindingExtension(Control.PaddingProperty));
