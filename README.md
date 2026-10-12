@@ -36,7 +36,7 @@ Start-Process outputs/iPhoneDesk/iPhoneDesk.exe -ArgumentList '--airplay','--res
 
 电脑和 iPhone 连接同一 Wi-Fi，手机控制中心选择屏幕镜像。鼠标控制还需电脑支持 BLE 外设模式，在 iPhone 辅助触控的设备列表连接电脑。定位和点击报告均就绪才可控制。
 
-照片显示使用竖屏分辨率，例如 `720x1280@60`。接收器参数保存在 `%APPDATA%/leapbtw/uxplay-windows/arguments.txt`，菜单可修改。历史“优化投屏.ps1”含横屏档位，目前不建议运行；详见 skills.md。
+照片显示使用竖屏分辨率，例如 `720x1280@60`。接收器参数保存在 `%APPDATA%/leapbtw/uxplay-windows/arguments.txt`，菜单可修改。仓库只保留当前维护源码，旧实验代码和旧优化脚本不发布；详见 skills.md。
 
 ## 检查
 

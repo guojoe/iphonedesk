@@ -1,4 +1,4 @@
-﻿# iPhoneDesk — 唯一有效开发规范与知识库
+# iPhoneDesk — 唯一有效开发规范与知识库
 
 修订日期：2026-10-12（Asia/Shanghai）。适用项目根目录：`C:/guojoe/iphonedesk`。
 
@@ -1103,6 +1103,7 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
     }
   ],
   "localOnlyFiles": [
+    "outputs/iPhoneDesk/优化投屏.ps1",
     "outputs/iPhoneDesk/iPhoneDesk.exe",
     "outputs/iPhoneDesk/iPhoneDesk.pdb",
     "outputs/iPhoneDesk/src/UsbMirror.cs",
@@ -1534,7 +1535,7 @@ reconnectRequested记录一次用户重试；卡片展示实际定位/点击客�
 
 ## 33. GitHub远程与推送规范（2026-10-12）
 用户明确授权推送到 **https://github.com/guojoe/iphonedesk**，并要求记录地址。Git remote：`origin https://github.com/guojoe/iphonedesk.git`；分支main。原远程只有README，基线提交686e7abe798fbe443366e3073830967bd747ce9f；本地接续它提交，不强推、不覆盖远程历史。仅设置本仓库提交署名guojoe与GitHub验证的noreply邮箱，不修改全局Git配置，不输出认证令牌。
-发布范围：正式C#/项目/manifest（排除已取消UsbMirror/native USB）、图标、mouse-actions配置、tools、接收器官方下载脚本、历史优化脚本（README明确当前禁用）、两份许可证、README/AGENTS/skills/.gitignore。接收器包通过固定来源+SHA256下载，不提交第三方二进制。忽略work/backups、bin/obj、所有exe/dll/pdb/zip、认证地址token、本地日志/手机图像/诊断报告/本机设置快照及USB旧组件。用户可用本地备份恢复运行包，Git为可构建源，不能把Git clone当作含已安装接收器。
+发布范围：正式C#/项目/manifest（排除已取消UsbMirror/native USB）、图标、mouse-actions配置、tools、接收器官方下载脚本、两份许可证、README/AGENTS/skills/.gitignore。接收器包通过固定来源+SHA256下载，不提交第三方二进制。忽略work/backups、bin/obj、所有exe/dll/pdb/zip、认证地址token、本地日志/手机图像/诊断报告/本机设置快照及USB旧组件。用户可用本地备份恢复运行包，Git为可构建源，不能把Git clone当作含已安装接收器。
 完整规范含历史本机证据。新增检查参数-RepositoryOnly，文档JSON的localOnlyFiles显式列出不提交的产物/历史文件；此模式只跳过名单项并打印跳过计数，其他缺文件仍报错；完整本机检查不跳过。新克隆应运行仓库模式、先构建再做两项EXE自检；运行EXE哈希/历史日志自检仍只能本机执行，不伪造提交。
 推送前检查git diff --cached/stat和敏感文件名单，源码复核不得包含真实token；只用git push origin main（不force）。推送后git ls-remote origin refs/heads/main与git rev-parse HEAD一致才称完成。PR不在此次任务范围。github CLI未安装，使用现有Git及已连接GitHub身份；不新增工具安装或要求用户重复审批。
 
@@ -1543,3 +1544,5 @@ reconnectRequested记录一次用户重试；卡片展示实际定位/点击客�
 §33推送前验收：29个暂存文件审查通过，未包含token/日志/私人照片/EXE或USB源码；从Git index导出的独立目录通过RepositoryOnly检查，Release构建成功，--self-test和--diagnostic-self-test均0。远程地址已记录，正常快进推送main，结果必须再核对远程HEAD；不会重启当前手机控制或覆盖本地冻结备份。
 
 §33格式检查踩坑：git diff --cached --check将原样保存的CRLF末尾CR报告trailing whitespace；根因为保留字节的-text属性，正确检查git -c core.whitespace=cr-at-eol diff --cached --check。该检查退出0，不改源码换行或全局设置。空输出经Set-Content管道没有生成文件，不能再Get-Content不存在的检查输出；直接以退出码验收。
+
+§33最新源码范围：按用户“保留最新的代码，之前的可以不要”，当前Git树仅保留维护版本，旧优化投屏.ps1移出跟踪并忽略；旧实验目录、构建和冻结备份不发布。历史实测/踩坑知识仍保留，旧脚本列入localOnlyFiles使新克隆检查可独立通过。本地冻结备份不改写，Git提交历史不强制重写。首批源码提交a29796e99d0001c1450d166c84bf8fb516b615af已正常推送并与远程SHA核对一致；本次范围清理不改运行行为、不重启程序。
