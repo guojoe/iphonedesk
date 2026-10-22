@@ -79,13 +79,7 @@ public sealed partial class Desk
                 File.WriteAllText(temp,next,new System.Text.UTF8Encoding(false));
                 if(File.Exists(ReceiverConfig))File.Replace(temp,ReceiverConfig,ReceiverConfig+"."+DateTime.Now.ToString("yyyyMMddHHmmssfff")+".bak");else File.Move(temp,ReceiverConfig);
                 raw=next;
-                string dir=Path.Combine(AppContext.BaseDirectory,"receiver");
-                foreach(string name in new[]{"uxplay-windows","uxplay-bluetooth-beacon"})foreach(var process in Process.GetProcessesByName(name))using(process)
-                {
-                    if(!string.Equals(process.MainModule?.FileName,Path.Combine(dir,name+".exe"),StringComparison.OrdinalIgnoreCase))continue;
-                    process.Kill();await process.WaitForExitAsync();
-                }
-                engine=null;OpenReceiver(this,new RoutedEventArgs());SetStatus("分辨率已保存，接收器已重启。请重新连接屏幕镜像。");
+                await RestartReceiver();SetStatus("分辨率已保存，接收器已重启。请重新连接屏幕镜像。");
             }
             catch(Exception ex){SetStatus("分辨率未应用："+ex.Message);}
         },false,true);

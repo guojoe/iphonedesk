@@ -122,8 +122,30 @@ public static class Program
         {
             Probe().GetAwaiter().GetResult(); return 0;
         }
+        // One main instance per executable path: a second launch (e.g. desktop shortcut) would fight for
+        // F8/F9, GATT and the embedded renderer, so it brings the running window forward instead.
+        string instanceKey=Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Environment.ProcessPath!.ToUpperInvariant())))[..16];
+        using var instance=new Mutex(true,@"Local\iPhoneDesk-"+instanceKey,out bool firstInstance);
+        if(!firstInstance){ActivateRunningInstance();return 0;}
         var app=new Application(); app.Run(new Desk()); return 0;
     }
+    private static void ActivateRunningInstance()
+    {
+        using var self=Process.GetCurrentProcess();
+        foreach(var other in Process.GetProcessesByName(self.ProcessName))using(other)
+        {
+            try
+            {
+                if(other.Id==self.Id || !string.Equals(other.MainModule?.FileName,Environment.ProcessPath,StringComparison.OrdinalIgnoreCase))continue;
+                nint window=other.MainWindowHandle;if(window==0)continue;
+                ShowWindow(window,IsIconic(window)?9:5);SetForegroundWindow(window);return;
+            }
+            catch{}
+        }
+    }
+    [System.Runtime.InteropServices.DllImport("user32.dll")]private static extern bool ShowWindow(nint hwnd,int how);
+    [System.Runtime.InteropServices.DllImport("user32.dll")]private static extern bool IsIconic(nint hwnd);
+    [System.Runtime.InteropServices.DllImport("user32.dll")]private static extern bool SetForegroundWindow(nint hwnd);
     private static async Task Probe()
     {
         string result;
@@ -240,6 +262,7 @@ public sealed partial class Desk : Window
             localServer?.Stop();localServer=null;
             DiagnosticEvent("cancel",activeGesture,new {reason="window-close",generation=captureGeneration,queued=inputs.Count});
             connectionTimer.Stop();captureGeneration++;inputs.Clear();capture?.Dispose();
+            try{videoHost.Detach();}catch{}
             if(hid.Connected) { try{hid.Send(pressed:0).Wait(500);}catch{} }
             hid.Dispose();
             DiagnosticEvent("session-end",0,new {dropped=diagnostics.Dropped,error=diagnostics.WriteError});
@@ -366,7 +389,15 @@ public sealed partial class Desk : Window
                 {
                     if(string.Equals(existing.MainModule?.FileName,file,StringComparison.OrdinalIgnoreCase))
                     {
-                        engine=existing;SetStatus("投屏接收器已经运行，请从 iPhone 屏幕镜像连接，或查看系统托盘。不会重复启动。");return;
+                        engine=existing;
+                        // A receiver left by an earlier session without any renderer window cannot show video
+                        // (observed 2026-10-22: phone session open, no window). Heal once per session, never loop.
+                        // Another iPhoneDesk (any path) may hold the renderer embedded, where it is not top-level.
+                        if(!receiverHealed && !receiverChanging && !OtherDeskRunning() && VideoHost.FindRenderer(file)==0)
+                        {
+                            receiverHealed=true;_=AutoRestartReceiver("检测到上次遗留的投屏接收器没有画面窗口，正在自动重启接收器…");return;
+                        }
+                        SetStatus("投屏接收器已经运行，请从 iPhone 屏幕镜像连接，或查看系统托盘。不会重复启动。");return;
                     }
                 }
                 catch{} existing.Dispose();
@@ -375,6 +406,33 @@ public sealed partial class Desk : Window
             SetStatus("已启动本项目 AirPlay 接收器。电脑与 iPhone 连接同一 Wi-Fi，在 iPhone 控制中心 → 屏幕镜像中选择投屏名称。等待手机连接，无需手机 App 或 USB 驱动。");
         }
         catch(Exception ex){SetStatus(ex.Message);}
+    }
+    private bool receiverHealed;
+    private static bool OtherDeskRunning()
+    {
+        using var self=Process.GetCurrentProcess();
+        var others=Process.GetProcessesByName(self.ProcessName);
+        try{return others.Any(p=>p.Id!=self.Id);}finally{foreach(var p in others)p.Dispose();}
+    }
+    // Stops only receiver processes at this package's absolute paths (§2), then starts a fresh receiver.
+    private async Task RestartReceiver()
+    {
+        string dir=Path.Combine(AppContext.BaseDirectory,"receiver");
+        foreach(string name in new[]{"uxplay-windows","uxplay-bluetooth-beacon"})foreach(var process in Process.GetProcessesByName(name))using(process)
+        {
+            try{if(!string.Equals(process.MainModule?.FileName,Path.Combine(dir,name+".exe"),StringComparison.OrdinalIgnoreCase))continue;}catch{continue;}
+            try{if(!process.HasExited)process.Kill();}catch(InvalidOperationException){}
+            await process.WaitForExitAsync();
+        }
+        engine=null;OpenReceiver(this,new RoutedEventArgs());
+    }
+    private async Task AutoRestartReceiver(string reason)
+    {
+        if(receiverChanging)return;
+        receiverChanging=true;UpdateActionStates();SetStatus(reason);
+        try{await RestartReceiver();SetStatus("接收器已重启。请在 iPhone 控制中心 → 屏幕镜像重新选择投屏名称。");}
+        catch(Exception ex){SetStatus("接收器自动重启失败，可点“重启投屏接收器”重试："+ex.Message);}
+        finally{receiverChanging=false;UpdateActionStates();}
     }
     private async void StartHid(object sender,RoutedEventArgs e)
     {

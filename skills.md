@@ -3,6 +3,7 @@
 修订日期：2026-10-12（Asia/Shanghai）。适用项目根目录：`C:/guojoe/iphonedesk`。
 
 ## 当前有效范围（2026-10-12，优先于下方历史记录）
+2026-10-22新增投屏接收器自愈（§36）：关闭前归还渲染窗口、启动时遗留接收器无画面自动重启一次、连接卡手动“重启投屏接收器”。
 当前新增安卓ADB/scrcpy支持及一级平台选择菜单（§34）、与iPhone一致的左菜单/右手机嵌入布局和iOS样式（§35）；启动先选苹果/安卓，再进入对应工作台。iPhone USB取消范围不包含本次明确授权的安卓ADB连接。
 当前版本包含独立重新连接按钮（§30）和图片显示修复（§31）：默认接收器720x1280@60竖屏，照片保持比例占满显示区宽度，上下比例黑边不自动裁图；分辨率菜单区分竖/横方向。当前源码、EXE、外部接收器参数配套冻结于§32新备份，§29上拖可用旧备份仍保留。
 当前运行使用16:32 bottom-anchor行为基线合入诊断日志版（§23），正式源码已撤销§17–19研究行为并与真实回滚DLL分流对照通过，源码与本次发布对应。配置按§26保持普通垂直拖动2，底部独立按钮1/anchorY=32482/32767；禁止全局回退垂直1。2026-10-12用户确认当前版本“向上拖动都可以了”，作为此设备当前实测成功基线（§29）；不外推多任务卡片或所有iPhone手势均稳定。§22/25–27失败记录是之前状态，不能覆盖本次用户确认。每次启动自动写logs/gesture-时间-session.jsonl，新日志已生产生效；§20–22关于“候选未上线/源码不同”的说法为当时状态，被§23取代。
@@ -162,7 +163,7 @@ iphonedesk/
 
 正确做法：分别检查 mirrorConnected 与 mouseConnected，不用投屏状态放行输入。
 
-实测来源：`outputs/iPhoneDesk/src/Program.cs:277`（锚点 `mirrorState.Text=`）；`outputs/iPhoneDesk/src/Program.cs:181`（锚点 `inputState.Text=`）；`outputs/iPhoneDesk/运行日志.txt:107`（锚点 `2026-10-08T16:48:25`）。
+实测来源：`outputs/iPhoneDesk/src/Program.cs:300`（锚点 `mirrorState.Text=`）；`outputs/iPhoneDesk/src/Program.cs:203`（锚点 `inputState.Text=`）；`outputs/iPhoneDesk/运行日志.txt:107`（锚点 `2026-10-08T16:48:25`）。
 
 ### ⚠ F02 手机已配对却定位/按键均为0
 
@@ -174,7 +175,7 @@ iphonedesk/
 
 正确做法：不要恢复protocolConfirmed；按真实订阅状态判就绪；先查0计数路径再推断蓝牙慢。
 
-实测来源：`outputs/iPhoneDesk/src/Program.cs:274`（锚点 `capture.ClientReady=hid.AbsoluteConnected;`）；`outputs/iPhoneDesk/验证记录.md` v6；用户16:40截图定位0/按键0（历史截图文件见§5）。
+实测来源：`outputs/iPhoneDesk/src/Program.cs:297`（锚点 `capture.ClientReady=hid.AbsoluteConnected;`）；`outputs/iPhoneDesk/验证记录.md` v6；用户16:40截图定位0/按键0（历史截图文件见§5）。
 
 ### ⚠ F03 左右键整体互换后右键变成确认
 
@@ -210,7 +211,7 @@ iphonedesk/
 
 正确做法：只对必要按键边沿等待，移动合并但不删按钮转换；保留释放路径。
 
-实测来源：`outputs/iPhoneDesk/src/HidMouse.cs:166`（锚点 `held<80`）；`outputs/iPhoneDesk/src/HidMouse.cs:211`（锚点 `MapDesktopButtons(pressed.Value)!=buttons)`）；`outputs/iPhoneDesk/src/Program.cs:512`（锚点 `inputs.Last.Value=input.Absolute?input:`）。
+实测来源：`outputs/iPhoneDesk/src/HidMouse.cs:166`（锚点 `held<80`）；`outputs/iPhoneDesk/src/HidMouse.cs:211`（锚点 `MapDesktopButtons(pressed.Value)!=buttons)`）；`outputs/iPhoneDesk/src/Program.cs:570`（锚点 `inputs.Last.Value=input.Absolute?input:`）。
 
 ### ⚠ F06 WPF预览有手机但实时区变灰方块
 
@@ -222,7 +223,7 @@ iphonedesk/
 
 正确做法：原生宿主及renderer均设置区域，断开重置空区域，销毁时归还父窗口/style；实时截图用独立路径验证。
 
-实测来源：`outputs/iPhoneDesk/src/VideoHost.cs:22`（锚点 `CreateRoundRectRgn(0,0,0,0,0,0)`）；`outputs/iPhoneDesk/src/VideoHost.cs:80`（锚点 `SetWindowRgn(host,hostRegion,true)`）；`outputs/iPhoneDesk/src/Program.cs:25`（锚点 `RenderTargetBitmap`）。
+实测来源：`outputs/iPhoneDesk/src/VideoHost.cs:22`（锚点 `CreateRoundRectRgn(0,0,0,0,0,0)`）；`outputs/iPhoneDesk/src/VideoHost.cs:95`（锚点 `SetWindowRgn(host,hostRegion,true)`）；`outputs/iPhoneDesk/src/Program.cs:25`（锚点 `RenderTargetBitmap`）。
 
 ### ⚠ F07 接收器名称带空格不能按shell引号理解
 
@@ -234,7 +235,7 @@ iphonedesk/
 
 正确做法：以实际接收器解析规则为准；未支持原值只读回传；以后支持空格需扩展适配或接收器解析，不能猜引号就行。
 
-实测来源：`work/iphonedesk/mainwindow.cpp:99`（锚点 `return content.split`）；`outputs/iPhoneDesk/src/DeskLayout.cs:106`（锚点 `value.Any(char.IsWhiteSpace)`）。
+实测来源：`work/iphonedesk/mainwindow.cpp:99`（锚点 `return content.split`）；`outputs/iPhoneDesk/src/DeskLayout.cs:108`（锚点 `value.Any(char.IsWhiteSpace)`）。
 
 ### ⚠ F08 本机接口可读但截图没验证
 
@@ -1073,12 +1074,66 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
       "file": "outputs/iPhoneDesk/src/AndroidSupport.cs",
       "feature": "Desk.IOSButton(title,async(_,_)=>await Execute(task),primary)",
       "absent": false
+    },
+    {
+      "claim": "关闭窗口前先把渲染窗口还给接收器",
+      "file": "outputs/iPhoneDesk/src/Program.cs",
+      "feature": "try{videoHost.Detach();}catch{}",
+      "absent": false
+    },
+    {
+      "claim": "遗留接收器无画面窗口时每次会话只自愈一次",
+      "file": "outputs/iPhoneDesk/src/Program.cs",
+      "feature": "if(!receiverHealed && !receiverChanging && !OtherDeskRunning() && VideoHost.FindRenderer(file)==0)",
+      "absent": false
+    },
+    {
+      "claim": "重启接收器只结束本包绝对路径进程",
+      "file": "outputs/iPhoneDesk/src/Program.cs",
+      "feature": "if(!string.Equals(process.MainModule?.FileName,Path.Combine(dir,name+\".exe\"),StringComparison.OrdinalIgnoreCase))continue;}catch{continue;}",
+      "absent": false
+    },
+    {
+      "claim": "连接卡提供手动重启投屏接收器",
+      "file": "outputs/iPhoneDesk/src/DeskLayout.cs",
+      "feature": "IOSAsyncButton(\"重启投屏接收器\"",
+      "absent": false
+    },
+    {
+      "claim": "名称应用复用统一重启接收器",
+      "file": "outputs/iPhoneDesk/src/DeskLayout.cs",
+      "feature": "await RestartReceiver();",
+      "absent": false
+    },
+    {
+      "claim": "分辨率应用复用统一重启接收器",
+      "file": "outputs/iPhoneDesk/src/MirrorResolution.cs",
+      "feature": "await RestartReceiver();SetStatus",
+      "absent": false
+    },
+    {
+      "claim": "Detach在宿主存在时恢复空区域",
+      "file": "outputs/iPhoneDesk/src/VideoHost.cs",
+      "feature": "public void Detach()",
+      "absent": false
+    },
+    {
+      "claim": "同路径只允许一个主实例并置前已运行窗口",
+      "file": "outputs/iPhoneDesk/src/Program.cs",
+      "feature": "if(!firstInstance){ActivateRunningInstance();return 0;}",
+      "absent": false
+    },
+    {
+      "claim": "其他iPhoneDesk运行时不做接收器自愈",
+      "file": "outputs/iPhoneDesk/src/Program.cs",
+      "feature": "!OtherDeskRunning() && VideoHost.FindRenderer(file)==0",
+      "absent": false
     }
   ],
   "snapshots": [
     {
       "file": "outputs/iPhoneDesk/src/DeskLayout.cs",
-      "sha256": "4A2A14F071CC3E029476AC492E90FAD2E9E7C9C32EBB32645F5368D35B1B23A6"
+      "sha256": "0C0F6958C593BA4CE7122A18651DAB62B02AB787D8D781B6B667B9D50E730273"
     },
     {
       "file": "outputs/iPhoneDesk/src/HidMouse.cs",
@@ -1098,11 +1153,11 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
     },
     {
       "file": "outputs/iPhoneDesk/src/Program.cs",
-      "sha256": "80EC0A299A4BE457D16B8AF1904D651811227C220DB792D7AD88C104AD38F4E9"
+      "sha256": "1F8392AD2F76A35D2A283F26C46AC895681327B66E486DE14D2E74D6CB6D3637"
     },
     {
       "file": "outputs/iPhoneDesk/src/VideoHost.cs",
-      "sha256": "B11F51C0B078ED773326871C97C31C8EA23C856B8328CCB4AB1CEB8BDAC11147"
+      "sha256": "0DF87BBC616CB21DEB58AEAE66C1F41D9B9DBA4347C00D7D67ECEA604BEBD313"
     },
     {
       "file": "outputs/iPhoneDesk/tools/检查规范.ps1",
@@ -1122,7 +1177,7 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
     },
     {
       "file": "outputs/iPhoneDesk/src/MirrorResolution.cs",
-      "sha256": "AE8A84501918EBBD16966C39EAF6302AC41820D2B41080EE570ACF4704000ABF"
+      "sha256": "A7375FC2065353F3D1F845DC5CA951825356CD6E530D73D9146402CAB751B925"
     },
     {
       "file": "outputs/iPhoneDesk/src/UsbMirror.cs",
@@ -1154,11 +1209,11 @@ rg -n 'SendAt|RunRemote' outputs/iPhoneDesk/src -g '*.cs' -g '!obj/**' -g '!bin/
     },
     {
       "file": "outputs/iPhoneDesk/iPhoneDesk.exe",
-      "sha256": "AA425BA4B493328F6945A55EA474A6FED6268E4531063D9BB65F566C807B5890"
+      "sha256": "7F25533D4299C3B01E08A99C2E0A2FD715992ECC8CFFA37712FB654EBC87EAF7"
     },
     {
       "file": "outputs/iPhoneDesk/iPhoneDesk.pdb",
-      "sha256": "6689F506E8F0683644784A8DA19793A5C0D919DA5C7CF232B10903F65ED603AD"
+      "sha256": "0CD13296DC1819B0F44606DFD5762E095263D37E6FAB4F9001DE6AD26FD73BAD"
     },
     {
       "file": "outputs/iPhoneDesk/mouse-actions.json",
@@ -1682,3 +1737,12 @@ reconnectRequested记录一次用户重试；卡片展示实际定位/点击客�
 Computer-use调试踩坑：【报错原文】coordinate input geometry is unavailable；随后新用户消息后call get_window_state before using this window。【最小复现】仅include_screenshot=false取得树后对需要坐标的索引点击，或跨消息复用旧观察。【根因】输入几何/观察缓存未就绪或失效。【正确写法】每次动作前新观察含截图，核对截图实际目标，失败先重新观察，不盲重试。后续观察返回树为iPhoneDesk但图为前台其他应用，停止UI动作，未点击该应用；不把混合观察作为新版视觉证据。上述不涉及源码运行异常，不改变手机或系统设置。
 发布/复验：复制最新EXE/PDB须同一build并比对SHA256；Git发布仅源，第三方包用下载脚本固定校验。复验--self-test/--diagnostic-self-test/--android-self-test及--android-ui-smoke不发送手机输入；平台smoke须独立主实例。最新发布检查通过后正常快进推送origin main，使用git ls-remote与HEAD核对，不强推、不提交旧实验/运行文件。
 §35 Git源验收：32个暂存文件范围/令牌审查通过，index导出android-review通过RepositoryOnly；从该独立导出目录Release构建成功，--self-test/--diagnostic-self-test/--android-self-test/--android-ui-smoke均退出0。本轮发布含安卓支持、分级平台及返回按钮、统一iOS样式和安卓原生嵌入；正式手机内容/日志/序列号未作为文件提交。
+
+## 36. 投屏接收器自愈与手动重启（2026-10-22）
+任务：用户实测“启动后没投上”，要求有问题自动排查纠正。改前读§0–5/§6/§7–8/§24/§28/§30/§34，按§7.1基线检查：tools/检查规范.ps1需PowerShell 7（Contains带StringComparison重载），本机仅Windows PowerShell 5.1且未装pwsh，脚本在第16行报“Cannot find an overload for "Contains" and the argument count: "2"”；用同逻辑Python等价复核（临时脚本，未入库）基线93断言/30指纹/24行号0失败。此为环境缺口，不是规范漂移；后续接手先确认pwsh可用。
+⚠ F12 现象→关闭并重开iPhoneDesk后右侧一直“等待投屏画面窗口”，手机重投也无画面；真实数据→15:05新实例日志“投屏接收器已经运行…不会重复启动”后再无“已识别投屏窗口”；11:20启动的本包uxplay-windows仍与手机172.16.10.16保持AirPlay TCP Established，但该进程无任何可见顶层窗口（仅托盘/观察者窗口）；手机停止再重投后接收器既无外部连接也无新日志；只结束本包路径三个uxplay进程并重启后，用户确认“可以了”。坑→接收器进程存活/端口可连≠可以出画面；渲染窗口是被SetParent进我方宿主的跨进程子窗口，原RestoreVideo只在DestroyWindowCore执行。部署本节时用旧版优雅关闭（CloseMainWindow）实测：接收器“AirPlay Video Stream”窗口仍作为独立可见窗口保留、手机连接仍在，即正常关闭未复现窗口丢失；15:04那次实例日志无“诊断日志收尾”行；Windows应用日志15:05:04 Windows Error Reporting 1001 “AppHangXProcB1，P1 iPhoneDesk.exe 1.0.0.0，P6 svchost.exe”，即主程序UI线程跨进程等待svchost而无响应后被结束。被强制结束时Closing/DestroyWindowCore都不执行，嵌入的跨进程渲染子窗口随宿主销毁，留下手机会话无窗口——这是本次已核实的触发链。Detach前移只保护正常关闭；强制结束只能靠启动自愈兜底。该卡死的具体svchost服务和调用点未定位（WER附件未分析），属于待查项，不能归因手机。正确做法→Closing中在销毁窗口前videoHost.Detach()归还父窗口/样式/位置；OpenReceiver复用已有本包接收器时，用VideoHost.FindRenderer（不依赖宿主已创建）检查无可见渲染窗口则自动RestartReceiver，每会话最多一次（receiverHealed）防止无限重启（同§28禁止盲目循环）；其他卡住场景用连接卡“重启投屏接收器”。来源→运行日志15:05:40条目、本次进程/窗口/TCP只读核对、用户原话“可以了”。
+实现：Program.cs RestartReceiver统一“按绝对路径核对后Kill+等待退出→engine=null→OpenReceiver”，MainModule读取失败跳过该进程而非中断，已退出进程的InvalidOperationException忽略；DeskLayout名称应用与MirrorResolution分辨率应用改调此函数，语义不变。AutoRestartReceiver置receiverChanging禁用接收器相关按钮，失败提示可手动重试。不碰receiver目录内mDNSResponder、系统Bonjour、蓝牙/GATT、鼠标映射或手势配置。
+边界：启动自愈判断只看“复用的遗留接收器此刻无可见渲染窗口”；若此时手机仅在AirPlay播放音频或恰在建立镜像，重启会打断它，需在手机重连。运行中出现的无画面不自动重启（无法可靠区分纯音频AirPlay），只提供手动按钮。Detach后渲染窗口会作为独立窗口短暂出现，下次启动由TryAttach重新嵌入。
+§36离线验收：work/iphonedesk/receiver-self-heal Release构建无警告；--self-test/--diagnostic-self-test/--android-self-test退出0，检查鼠标回调.py PASS；Python等价规范检查100断言/30指纹/24行号0失败（新增7条§36断言）。实机：关闭时归还窗口、遗留接收器自愈、手动按钮尚待发布后实测，不能把离线通过写成实机成功。
+§36多开误判事故（同日）：【报错原文】运行日志15:20:46“F8/F9 已被其他程序占用，无法启用全局鼠标接管。”随后15:20:53“检测到上次遗留的投屏接收器没有画面窗口，正在自动重启接收器…”。【最小复现】实例A已嵌入渲染窗口时，用桌面快捷方式（目标为正式exe，参数--airplay --resume-bluetooth，确认为最新版）再启动实例B并选择苹果。【根因】渲染窗口被A SetParent为子窗口，FindRenderer只枚举可见顶层窗口，B误判无画面并重启接收器，打断A的投屏；同时两主实例违反§7.6。用户因此误以为快捷方式不是最新。【正确写法】Main对Desk启动加按exe完整路径哈希的Local命名Mutex，同路径第二次启动只把已运行窗口还原/置前并退出0（不同路径的work构建不受影响）；自愈条件追加OtherDeskRunning()（任意路径的其他iPhoneDesk进程存在即不自愈）。验证：work/iphonedesk/single-instance构建无警告，三项自检和检查鼠标回调.py通过；该构建目录实测连续启动两次，第二个退出码0、第一个保持运行、同路径仅1进程。旧版备份single-instance/rollback，正式exe/pdb哈希核对后部署，以快捷方式同参数启动。“卡死后启动自愈”路径仍未实机触发；15:04 svchost跨进程卡死原因仍待查。
+§31复发事故（2026-10-22，照片中央小图第二次）：用户截图黑底中央小照片；只读GET /status.videoLayout渲染窗口638×1382与宿主一致，排除窗口尺寸；真实%APPDATA%/leapbtw/uxplay-windows/arguments.txt为“-n iPhoneDesk -nh”，§31/§32要求的-s 720x1280@60已不存在（文件最后写入11:20:28与运行日志“投屏名称已保存为iPhoneDesk”同时；ApplyMirrorName保留其他参数，故-s在此之前已缺失，具体由哪一步删除无记录，不臆断）。无ProgramData优先配置。修复：原值精确匹配后备份work/iphonedesk/photo-fill-restore/arguments.before.txt，临时文件+File.Replace（另留.bak）原子写为“-n iPhoneDesk -nh -s 720x1280@60”，保留名称/-nh；仅按绝对路径结束本包uxplay三进程并重启receiver，主程序/蓝牙未重启。待用户重连后看画面确认。预防：接手照片/画面问题先读arguments.txt的-s方向再看窗口几何；选“自动”分辨率会删除-s退回接收器默认横向画布，会复现小图。桌面快捷方式唯一一个C:/Users/<用户>/Desktop/iPhoneDesk.lnk，目标正式exe、参数--airplay --resume-bluetooth、工作目录outputs/iPhoneDesk，本次按原值重写刷新；发布替换exe即生效，无需改快捷方式。

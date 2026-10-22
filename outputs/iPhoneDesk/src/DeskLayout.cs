@@ -69,6 +69,8 @@ public sealed partial class Desk
         connection.Body.Children.Add(mirrorState);connection.Body.Children.Add(inputState);
         mirrorButton=IOSButton("启动 AirPlay 投屏",OpenReceiver,true);connection.Body.Children.Add(mirrorButton);
         connection.Body.Children.Add(Label("同一 Wi-Fi · iPhone 控制中心\n屏幕镜像 → 选择下方投屏名称\n无需手机 App，无需 USB 驱动",11,"#636366"));
+        connection.Body.Children.Add(IOSAsyncButton("重启投屏接收器",async()=>{await RestartReceiver();SetStatus("接收器已重启。请在 iPhone 控制中心 → 屏幕镜像重新选择投屏名称。");},false,true));
+        connection.Body.Children.Add(Label("手机已连接但没有画面，或列表里找不到投屏名称时使用。",11,"#636366"));
         control=IOSButton("连接 iPhone 控制",StartHid,false);connection.Body.Children.Add(control);
         connection.Body.Children.Add(Label("使用电脑蓝牙连接 iPhone；有线鼠标、无线鼠标和触控板均可。",11,"#636366"));
         connectionNotice.TextWrapping=TextWrapping.Wrap;connectionNotice.FontSize=11;connectionNotice.Margin=new Thickness(0,8,0,0);connection.Body.Children.Add(connectionNotice);
@@ -111,16 +113,7 @@ public sealed partial class Desk
             string args=File.Exists(config)?File.ReadAllText(config):"-nh -s 1280x720@60 -fps 60 -vd d3d11h264dec -vc d3d11convert -vsync no";
             args=System.Text.RegularExpressions.Regex.Replace(args,@"(?:^|\s)-n\s+\S+"," ").Trim();
             File.WriteAllText(config,"-n "+value+" "+args,new System.Text.UTF8Encoding(false));
-            string dir=Path.Combine(AppContext.BaseDirectory,"receiver");
-            foreach(string processName in new[]{"uxplay-windows","uxplay-bluetooth-beacon"})
-                foreach(var process in Process.GetProcessesByName(processName))
-                    using(process)
-                    {
-                        string expected=Path.Combine(dir,processName+".exe");
-                        if(!string.Equals(process.MainModule?.FileName,expected,StringComparison.OrdinalIgnoreCase))continue;
-                        process.Kill();await process.WaitForExitAsync();
-                    }
-            engine=null;OpenReceiver(this,new RoutedEventArgs());
+            await RestartReceiver();
             SetStatus("投屏名称已保存为“"+value+"”。接收器已重启，请在 iPhone 重新连接屏幕镜像。");
         }
         catch(Exception ex){SetStatus("应用投屏名称失败："+ex.Message);}

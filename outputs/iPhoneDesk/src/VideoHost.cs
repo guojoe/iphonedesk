@@ -33,18 +33,7 @@ public sealed class VideoHost : HwndHost
             nint empty=CreateRoundRectRgn(0,0,0,0,0,0);
             if(empty!=0 && SetWindowRgn(host,empty,true)==0)DeleteObject(empty);
         }
-        var ids=new HashSet<uint>();
-        foreach(var p in Process.GetProcessesByName("uxplay-windows"))
-            using(p){try{if(string.Equals(p.MainModule?.FileName,receiverPath,StringComparison.OrdinalIgnoreCase))ids.Add((uint)p.Id);}catch{}}
-        nint candidate=0;
-        EnumWindows((hwnd,_)=>
-        {
-            GetWindowThreadProcessId(hwnd,out uint pid);
-            if(!ids.Contains(pid)||!IsWindowVisible(hwnd))return true;
-            var text=new StringBuilder(512);GetWindowText(hwnd,text,512);var title=text.ToString();
-            if(title=="AirPlay Video Stream"||(title.Contains("Direct")&&title.Contains("enderer"))){candidate=hwnd;return false;}
-            return true;
-        },0);
+        nint candidate=FindRenderer(receiverPath);
         if(candidate==0)return false;
         originalStyle=GetWindowLongPtr(candidate,-16);originalParent=GetParent(candidate);
         GetWindowRect(candidate,out originalRect);ShowWindow(candidate,9);
@@ -58,6 +47,32 @@ public sealed class VideoHost : HwndHost
             throw new InvalidOperationException("投屏窗口嵌入失败，请保留独立窗口并查看日志。");
         }
         video=candidate;lastWidth=-1;lastHeight=-1;ResizeVideo();ShowWindow(host,5);ShowWindow(video,5);return true;
+    }
+    // Visible top-level renderer of the receiver at this exact path; works before the host window exists.
+    public static nint FindRenderer(string receiverPath)
+    {
+        var ids=new HashSet<uint>();
+        foreach(var p in Process.GetProcessesByName("uxplay-windows"))
+            using(p){try{if(string.Equals(p.MainModule?.FileName,receiverPath,StringComparison.OrdinalIgnoreCase))ids.Add((uint)p.Id);}catch{}}
+        nint candidate=0;
+        EnumWindows((hwnd,_)=>
+        {
+            GetWindowThreadProcessId(hwnd,out uint pid);
+            if(!ids.Contains(pid)||!IsWindowVisible(hwnd))return true;
+            var text=new StringBuilder(512);GetWindowText(hwnd,text,512);var title=text.ToString();
+            if(title=="AirPlay Video Stream"||(title.Contains("Direct")&&title.Contains("enderer"))){candidate=hwnd;return false;}
+            return true;
+        },0);
+        return candidate;
+    }
+    // Return the renderer to the receiver while our window still exists, so closing the app
+    // does not destroy the receiver's child window and strand the phone session without video.
+    public void Detach()
+    {
+        RestoreVideo();
+        if(host==0)return;
+        nint empty=CreateRoundRectRgn(0,0,0,0,0,0);
+        if(empty!=0 && SetWindowRgn(host,empty,true)==0)DeleteObject(empty);
     }
     private void ResizeVideo()
     {
